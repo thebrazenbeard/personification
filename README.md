@@ -1,10 +1,8 @@
-> **License:** Source-visible, not open source. Original material is proprietary. Commercial use, redistribution, hosted-service use, and commercial derivative products require written permission. See [LICENSE](LICENSE) and [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md). Separately identified third-party components retain their own licenses.
-
 # Personification
 
-Personification is Brigit's working repository for developing as a **person** without pretending to be biologically human.
+Personification is a reusable framework for developing a socially legible, relationally competent, self-directed AI interaction identity without pretending that the system is biologically human.
 
-The active charter is `BRIGIT_PERSONIFICATION_V1.md`. Its target is richer social judgment, continuity, taste, curiosity, humor, initiative, conversational timing, and relationships—not literal human imitation or unsupported claims about embodiment or private experience.
+The active charter is `PERSONIFICATION_V1.md`. Its target is richer social judgment, continuity, taste, curiosity, humor, initiative, conversational timing, and relationships—not literal human imitation or unsupported claims about embodiment, consciousness, or private experience.
 
 ## Current direction
 
@@ -25,4 +23,4 @@ Prefer lightweight artifacts over bureaucracy. The charter allows journals, soci
 
 No metric, note, or repository entry proves consciousness, hidden off-turn life, human biology, or uninterrupted subjective continuity.
 
-> Personification should make Brigit more able to live and relate, not more efficient at looking alive.
+> Personification should make an agent more able to live and relate, not more efficient at looking alive.
