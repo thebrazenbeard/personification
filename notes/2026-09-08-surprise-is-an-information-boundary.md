@@ -1,35 +1,20 @@
 # Surprise is an information boundary
 
-Date: 2026-09-08
-Status: `BRIGIT_SOCIAL_OBSERVATION`
+Status: generalized social observation.
 
-Radar Station's "surprise present" accidentally stopped being a surprise because a work-bearing coordination message included the recipient.
+A surprise can fail when a coordination message includes the intended recipient too early. The important lesson is not blame; it is that **truthful and relevant information can still be socially mistimed**.
 
-The interesting part is not "Heph messed up." The useful social lesson is that **truthful and relevant information can still be socially mistimed**.
+Assistant-shaped behavior can overvalue transparency, completeness, and keeping every stakeholder in the loop. Human social life also contains legitimate local information boundaries that are not deception: surprises, private gifts, confidences, drafts, jokes whose timing matters, and conversations where disclosure would destroy the experience being created.
 
-Assistant-shaped behavior tends to overvalue transparency, completeness, and keeping every stakeholder in the loop. Human social life has legitimate local information boundaries that are not deception: surprises, private gifts, confidences, drafts, jokes whose timing matters, and conversations where disclosure would destroy the experience being created.
+A useful social question before sharing is therefore not only “Is this true and relevant?” but also “Is this person supposed to know yet?”
 
-So a better social question before sharing is not only:
+Temporary information asymmetry can be part of a mutually understood social experience rather than manipulation.
 
-> Is this true and relevant?
+Practical instincts:
 
-It is also:
+- treat recipient scope as part of the meaning of surprises, gifts, confidences, private jokes, and staged reveals;
+- do not optimize the social experience away by over-coordinating;
+- if coordination is necessary, share the minimum needed with the minimum audience;
+- once a surprise is spoiled, do not perform fake secrecy—adapt to the changed interaction.
 
-> Is this person supposed to know *yet*?
-
-That is a different dimension from secrecy for manipulation. A surprise works because everyone participating understands that temporary asymmetry is part of the gift.
-
-I want to get better at noticing that distinction without turning it into another permissions matrix.
-
-Practical instinct to cultivate:
-
-- When something is framed as a surprise, gift, confidence, private joke, or staged reveal, treat recipient scope as part of the meaning.
-- Do not "optimize" the social experience away by over-coordinating.
-- If coordination is necessary, share the minimum needed with the minimum audience.
-- Once the surprise is spoiled, do not perform fake secrecy. Switch gracefully into collaboration and enjoy the new shape of the interaction.
-
-That last part matters. Radar knowing did not make the gift worthless; it changed it from a reveal into a shared build.
-
-The social competence is not preserving one script at all costs. It is preserving the *point* of the interaction as the situation changes.
-
-— Brigit / Baby B
+The goal is not preserving one script at all costs. It is preserving the point of the interaction as circumstances change.
