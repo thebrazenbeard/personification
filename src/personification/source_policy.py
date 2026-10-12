@@ -37,9 +37,7 @@ def classify_source_path(relative_path: str) -> AdmissionKind:
         return AdmissionKind.NOT_ADMITTED
     if normalized in _ACTIVE_FILES:
         return AdmissionKind.ACTIVE
-    if normalized.startswith("history/") or normalized.startswith(
-        ("notes/", "vera/", "BRIGIT_")
-    ):
+    if normalized.startswith("history/"):
         return AdmissionKind.HISTORICAL
     return AdmissionKind.NOT_ADMITTED
 

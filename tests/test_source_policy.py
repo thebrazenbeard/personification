@@ -24,9 +24,13 @@ class SourceAdmissionTests(unittest.TestCase):
             "history/brigit/BRIGIT_PERSONIFICATION_V1.md",
             "history/brigit/notes/2026-09-08-first-dot-observation.md",
             "history/vera/2026-09-08-self-appraisal.md",
-            "notes/old.md", "vera/self-report.md",
         ):
             self.assertEqual(classify_source_path(p), AdmissionKind.HISTORICAL)
+            with self.assertRaises(ValueError):
+                read_active_source(ROOT, p)
+
+        for p in ("notes/old.md", "vera/self-report.md", "BRIGIT_old.md"):
+            self.assertEqual(classify_source_path(p), AdmissionKind.NOT_ADMITTED)
             with self.assertRaises(ValueError):
                 read_active_source(ROOT, p)
 
@@ -46,6 +50,13 @@ class SourceAdmissionTests(unittest.TestCase):
         self.assertEqual(classify_source_path("experiments/future-secret.txt"), AdmissionKind.NOT_ADMITTED)
         with self.assertRaises(ValueError):
             read_active_source(ROOT, "experiments/future-secret.txt")
+
+    def test_importable_core_has_no_embedded_named_actors(self):
+        for file in (ROOT / "src" / "personification").glob("*.py"):
+            with self.subTest(file=file.name):
+                text = file.read_text(encoding="utf-8")
+                self.assertNotIn("Brigit", text)
+                self.assertNotIn("Vera", text)
 
     def test_no_auto_profile_load_from_repository_history(self):
         allowed = read_active_source(ROOT, "PERSONIFICATION_V1.md")
