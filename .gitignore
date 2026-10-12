@@ -1,7 +1,10 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+temp_auto_push.bat
 build/
 dist/
 *.egg-info/
 .venv/
+.gitignore
+branch_structure.json
