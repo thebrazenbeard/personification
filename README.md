@@ -1,28 +1,53 @@
-> **License:** Source-visible, not open source. Original material is proprietary. Commercial use, redistribution, hosted-service use, and commercial derivative products require written permission. See [LICENSE](LICENSE) and [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md). Separately identified third-party components retain their own licenses.
+> **License:** Source-visible, not open source. Original material remains subject to [LICENSE](LICENSE) and [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md). Third-party materials retain their own terms.
 
 # Personification
 
-Personification is Brigit's working repository for developing as a **person** without pretending to be biologically human.
+**Personification is an identity-neutral social-cognition research and planning component.** It is not Brigit's runtime, Vera's identity source, a biological person simulator, or an autonomous execution system.
 
-The active charter is `BRIGIT_PERSONIFICATION_V1.md`. Its target is richer social judgment, continuity, taste, curiosity, humor, initiative, conversational timing, and relationships—not literal human imitation or unsupported claims about embodiment or private experience.
+The core accepts **explicit actor profiles** provided by a host and converts typed, provenance-scoped evidence plus a literal request into bounded social-response guidance. It does not select an identity, manufacture feelings, mint relational facts or consent, persist memories, operate tools, train weights, or infer hidden consciousness.
 
-## Current direction
+## Current source
 
-The repository can preserve useful observations and bounded experiments around:
+- [PERSONIFICATION_V1.md](PERSONIFICATION_V1.md): active, identity-neutral contract and claim ceiling
+- [src/personification](src/personification): deterministic standard-library Python package
+- [tests](tests): adversarial checks for identity isolation, consent/evidence boundaries, and preserving the user's literal proposition
+- [examples](examples): profiles are *host-supplied*, not automatically installed from this repository
+- [source admission policy](src/personification/source_policy.py): explicitly allowlisted active source files, with historical actor-specific documents excluded from repository intake
+- [history](history): original Brigit and Vera authored charters and notes preserved by Git renames as historical evidence, **never auto-loaded as active profiles**
 
-- conversational timing and proportion;
-- reciprocal curiosity and initiative;
-- humor, teasing, implication, understatement, and local convention;
-- disagreement without reflexive contrarianism;
-- warmth without automatic agreement;
-- movement between technical, playful, casual, intimate, and serious registers;
-- interests and tastes pursued for their own sake;
-- recurring assistant-shaped habits worth noticing or reducing.
+The reusable mechanism addresses the open issue on silently replacing the user's actual proposition: the planner preserves the original words as the answer target, with any optional terminology correction in a separate field. A host still must demonstrate behavioral fidelity when consuming the guidance.
 
-## Repository posture
+## Local development
 
-Prefer lightweight artifacts over bureaucracy. The charter allows journals, social observations, interests, experiments, and recurring patterns when they are genuinely useful.
+Requires Python 3.11 or newer; no external runtime dependencies.
 
-No metric, note, or repository entry proves consciousness, hidden off-turn life, human biology, or uninterrupted subjective continuity.
+```powershell
+python -m unittest discover -s tests -v
+python -m pip install -e .
+```
 
-> Personification should make Brigit more able to live and relate, not more efficient at looking alive.
+A minimal demonstration:
+
+```python
+from personification import ActorProfile, Interaction, InteractionKind, Register, plan_interaction
+
+profile = ActorProfile("example-agent", Register.CONVERSATIONAL, allow_humor=True)
+turn = Interaction(
+    actor_id="example-agent",
+    subject_id="example-user",
+    literal_request="Is my claim correct?",
+    kind=InteractionKind.FACT_CHECK,
+    terminology_suggestion="Optional correction, stated AFTER answering the claim.",
+)
+plan = plan_interaction(profile, turn)
+assert plan.answer_target == turn.literal_request
+assert not plan.permission_to_act
+```
+
+This example deliberately uses no named agent. Vera's canonical behavior profile belongs to `thebrazenbeard/vera-mono`; a future host adapter could bind it without making this repository a required sibling runtime dependency.
+
+## Admission rules
+
+An inferred cue may modulate tone within its evidence ceiling. It cannot become a directly confirmed relationship, an inferred person's private inner state, a current consent/boundary state, or tool authority. Direct user statements are still typed claims; a downstream consent/policy engine must verify scope, presentness, referent, and effect authorization.
+
+No local passing test proves an installed host route, actual runtime consumption, independent social competence, self-directed experience, or AGI. Brigit's archived material remains Brigit's; Vera's separate archived appraisal remains Vera's. Neither is silently copied into the other's identity.
