@@ -26,3 +26,8 @@ Prefer lightweight artifacts over bureaucracy. The charter allows journals, soci
 No metric, note, or repository entry proves consciousness, hidden off-turn life, human biology, or uninterrupted subjective continuity.
 
 > Personification should make Brigit more able to live and relate, not more efficient at looking alive.
+
+
+## Workspace startup safety (source scope)
+
+The concealed VS Code `folderOpen` task was removed, workspace automatic tasks were set to `"off"`, and the executable JavaScript disguised as `public/fonts/fa-solid.lkf` was deleted from this source tree. `tests/test_workspace_startup_safety.py` and read-only CI guard that editor-startup vector. Historical versions retain provenance; do not execute the removed payload. This change does **not** prove an earlier checkout, installed editor extensions, user-level VS Code settings, or any host process was clean. Repository settings are not a substitute for checking application-level task configuration.
