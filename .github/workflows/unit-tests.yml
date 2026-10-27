@@ -1,0 +1,15 @@
+﻿name: Unit Tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run standard-library suite
+        run: PYTHONPATH=src python3 -m unittest discover -s tests -v
