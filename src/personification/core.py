@@ -230,15 +230,26 @@ def plan_interaction(profile: ActorProfile, turn: Interaction) -> SocialPlan:
 
     # Only an explicitly targeted, earlier same-kind cue is withdrawn.
     # An untargeted correction cannot silently suppress unrelated evidence.
-    corrected_cues = {
-        (e.claim, e.corrects_source_ref) for e in turn.evidence
-        if e.evidence_kind is EvidenceKind.EXPLICIT_CORRECTION
-        and e.corrects_source_ref is not None
-    }
+    corrected_indices = set()
+    for index, correction in enumerate(turn.evidence):
+        if (correction.evidence_kind is not EvidenceKind.EXPLICIT_CORRECTION
+                or correction.corrects_source_ref is None):
+            continue
+        target_indices = [
+            previous_index for previous_index, prior
+            in enumerate(turn.evidence[:index])
+            if prior.claim is correction.claim
+            and prior.source_ref == correction.corrects_source_ref
+            and prior.evidence_kind in (
+                EvidenceKind.INFERENCE, EvidenceKind.OBSERVED_BEHAVIOR,
+            )
+        ]
+        # Interaction admission has already verified exact target cardinality.
+        corrected_indices.add(target_indices[0])
     assessments = []
-    for item in turn.evidence:
+    for index, item in enumerate(turn.evidence):
         assessment = _classify(item)
-        if (item.claim, item.source_ref) in corrected_cues and assessment.standing in (
+        if index in corrected_indices and assessment.standing in (
             ClaimStanding.INFERENCE_ONLY, ClaimStanding.OBSERVATION_ONLY,
         ):
             assessment = ClassifiedClaim(
