@@ -140,9 +140,21 @@ class NeutralPersonificationTests(unittest.TestCase):
         self.assertEqual(plan.classified_claims[0].standing, ClaimStanding.REPORTED_STANCE)
         self.assertFalse(plan.classified_claims[0].establishes_consent)
 
-    def test_explicit_correction_does_not_establish_another_mind(self):
-        with self.assertRaises(ValueError):
-            self.evidence(ClaimKind.OTHER_MIND_INFERENCE, EvidenceKind.EXPLICIT_CORRECTION)
+    def test_explicit_correction_retracts_other_mind_inference_without_mind_claim(self):
+        inferred = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.OTHER_MIND_INFERENCE,
+            EvidenceKind.INFERENCE, "User appears upset", "cue-mental-1",
+        )
+        corrected = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.OTHER_MIND_INFERENCE,
+            EvidenceKind.EXPLICIT_CORRECTION, "I am not upset", "correction-mental-1",
+            corrects_source_ref="cue-mental-1",
+        )
+        plan = plan_interaction(self.verbal, self.turn(evidence=(inferred, corrected)))
+        self.assertFalse(plan.classified_claims[0].may_influence_tone)
+        self.assertEqual(plan.classified_claims[1].standing, ClaimStanding.CURRENT_CORRECTION)
+        self.assertFalse(plan.classified_claims[1].establishes_consent)
+        self.assertFalse(plan.permission_to_act)
 
     def test_direct_correction_preserved(self):
         item = self.evidence(ClaimKind.CONSENT_OR_PREFERENCE_STATE, EvidenceKind.EXPLICIT_CORRECTION)
@@ -155,8 +167,10 @@ class NeutralPersonificationTests(unittest.TestCase):
         inferred = self.evidence(
             ClaimKind.RELATIONSHIP_STATE_INFERENCE, EvidenceKind.INFERENCE,
         )
-        corrected = self.evidence(
-            ClaimKind.RELATIONSHIP_STATE_INFERENCE, EvidenceKind.EXPLICIT_CORRECTION,
+        corrected = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.EXPLICIT_CORRECTION, "Do not infer intimacy", "correction-1",
+            corrects_source_ref="turn-123",
         )
         old = plan_interaction(
             self.verbal, self.turn(evidence=(inferred,)),
@@ -180,6 +194,63 @@ class NeutralPersonificationTests(unittest.TestCase):
             self.verbal, self.turn(evidence=(old_social, different)),
         )
         self.assertTrue(plan.classified_claims[0].may_influence_tone)
+
+    def test_untargeted_correction_does_not_suppress_unrelated_inference(self):
+        inferred = self.evidence(ClaimKind.RELATIONSHIP_STATE_INFERENCE)
+        correction = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.EXPLICIT_CORRECTION, "Unscoped correction", "unscoped-1",
+        )
+        plan = plan_interaction(self.verbal, self.turn(evidence=(inferred, correction)))
+        self.assertTrue(plan.classified_claims[0].may_influence_tone)
+
+    def test_targeted_correction_preserves_unrelated_later_observation(self):
+        old = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.OBSERVED_BEHAVIOR, "Old cue", "cue-old",
+        )
+        correction = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.EXPLICIT_CORRECTION, "Reject old cue", "correction-old",
+            corrects_source_ref="cue-old",
+        )
+        newer = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.OBSERVED_BEHAVIOR, "New distinct cue", "cue-new",
+        )
+        plan = plan_interaction(self.verbal, self.turn(evidence=(old, correction, newer)))
+        self.assertFalse(plan.classified_claims[0].may_influence_tone)
+        self.assertTrue(plan.classified_claims[2].may_influence_tone)
+
+    def test_later_cue_with_reused_source_is_not_retroactively_suppressed(self):
+        prior = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.INFERENCE, "Old claim", "reused-source",
+        )
+        correction = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.EXPLICIT_CORRECTION, "Reject old claim", "correction-source",
+            corrects_source_ref="reused-source",
+        )
+        later = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.OBSERVED_BEHAVIOR, "New observation", "reused-source",
+        )
+        plan = plan_interaction(self.verbal, self.turn(evidence=(prior, correction, later)))
+        self.assertFalse(plan.classified_claims[0].may_influence_tone)
+        self.assertTrue(plan.classified_claims[2].may_influence_tone)
+
+    def test_correction_requires_a_single_prior_same_kind_cue(self):
+        inferred = self.evidence(ClaimKind.RELATIONSHIP_STATE_INFERENCE)
+        missing = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.EXPLICIT_CORRECTION, "Reject", "correction",
+            corrects_source_ref="nonexistent",
+        )
+        with self.assertRaisesRegex(ValueError, "correction target"):
+            self.turn(evidence=(inferred, missing))
+        with self.assertRaisesRegex(ValueError, "correction target"):
+            self.turn(evidence=(missing, inferred))
 
     def test_sensitive_context_disables_jokes(self):
         plan = plan_interaction(self.playful, self.turn(actor="agent-b", kind=InteractionKind.SENSITIVE))
