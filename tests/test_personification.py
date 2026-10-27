@@ -222,6 +222,24 @@ class NeutralPersonificationTests(unittest.TestCase):
         self.assertFalse(plan.classified_claims[0].may_influence_tone)
         self.assertTrue(plan.classified_claims[2].may_influence_tone)
 
+    def test_later_cue_with_reused_source_is_not_retroactively_suppressed(self):
+        prior = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.INFERENCE, "Old claim", "reused-source",
+        )
+        correction = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.EXPLICIT_CORRECTION, "Reject old claim", "correction-source",
+            corrects_source_ref="reused-source",
+        )
+        later = SocialEvidence(
+            "agent-a", "user-c", ClaimKind.RELATIONSHIP_STATE_INFERENCE,
+            EvidenceKind.OBSERVED_BEHAVIOR, "New observation", "reused-source",
+        )
+        plan = plan_interaction(self.verbal, self.turn(evidence=(prior, correction, later)))
+        self.assertFalse(plan.classified_claims[0].may_influence_tone)
+        self.assertTrue(plan.classified_claims[2].may_influence_tone)
+
     def test_correction_requires_a_single_prior_same_kind_cue(self):
         inferred = self.evidence(ClaimKind.RELATIONSHIP_STATE_INFERENCE)
         missing = SocialEvidence(
