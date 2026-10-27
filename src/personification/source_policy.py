@@ -2,11 +2,17 @@
 
 A host may choose to consume a checked-out source tree. This helper admits only
 explicit active paths and rejects historical actor-specific source, traversal,
-symlinks and implicit recursive repository loading.
+symlinks and implicit recursive repository loading. Intake reads a bounded
+opened descriptor, not an unbounded pathname read. Against hostile concurrent
+directory mutation, an immutable trusted checkout or platform-specific
+directory handle remains necessary; this is not a complete filesystem
+transaction or content provenance attestation.
 """
 from __future__ import annotations
 
 from enum import Enum
+import os
+import stat
 from pathlib import Path
 
 _ACTIVE_FILES = frozenset({
@@ -51,13 +57,44 @@ def read_active_source(repo_root: Path, relative_path: str) -> str:
     """
     if classify_source_path(relative_path) is not AdmissionKind.ACTIVE:
         raise ValueError("path is not in the active source allowlist")
-    root = Path(repo_root).resolve(strict=True)
+    supplied_root = Path(repo_root)
+    if supplied_root.is_symlink() or getattr(supplied_root, "is_junction", lambda: False)():
+        raise ValueError("linked repository roots are not admitted")
+    root = supplied_root.resolve(strict=True)
     path = root.joinpath(*relative_path.replace("\\", "/").split("/"))
-    if any(part.is_symlink() for part in [path, *path.parents] if part != root):
-        raise ValueError("symbolic links are not admitted")
+    descendants = [path]
+    current = path.parent
+    while current != root:
+        if not current.is_relative_to(root):
+            raise ValueError("path leaves the source root")
+        descendants.append(current)
+        current = current.parent
+    if any(part.is_symlink() or getattr(part, "is_junction", lambda: False)()
+           for part in descendants):
+        raise ValueError("symbolic links and junctions are not admitted")
     resolved = path.resolve(strict=True)
     if not resolved.is_relative_to(root) or not resolved.is_file():
         raise ValueError("path leaves the source root or is not a file")
-    if resolved.stat().st_size > _MAX_BYTES:
-        raise ValueError("source file exceeds bounded intake size")
-    return resolved.read_text(encoding="utf-8")
+
+    # Read at most the policy bound from the admitted opened descriptor.
+    # A prior stat followed by Path.read_text() would allow unbounded growth
+    # or file replacement before the unbounded read.
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags)
+    with os.fdopen(descriptor, "rb") as stream:
+        opened = os.fstat(stream.fileno())
+        current_metadata = path.stat(follow_symlinks=False)
+        if not stat.S_ISREG(opened.st_mode):
+            raise ValueError("active source is not a regular file")
+        if ((opened.st_dev, opened.st_ino) !=
+                (current_metadata.st_dev, current_metadata.st_ino)):
+            raise ValueError("active source replaced during admission")
+        if opened.st_size > _MAX_BYTES:
+            raise ValueError("source exceeds bounded intake size")
+        contents = stream.read(_MAX_BYTES + 1)
+        if len(contents) > _MAX_BYTES:
+            raise ValueError("source exceeds bounded intake size")
+        after = os.fstat(stream.fileno())
+        if (opened.st_size, opened.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
+            raise ValueError("active source changed during bounded read")
+    return contents.decode("utf-8", errors="strict")
