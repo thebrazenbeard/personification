@@ -86,6 +86,7 @@ class SocialEvidence:
     evidence_kind: EvidenceKind
     statement: str
     source_ref: str
+    corrects_source_ref: str | None = None
 
     def __post_init__(self) -> None:
         _require_id(self.actor_id, "evidence.actor_id")
@@ -96,14 +97,21 @@ class SocialEvidence:
             raise ValueError("unknown evidence kind")
         _require_text(self.statement, "statement")
         _require_text(self.source_ref, "source_ref")
+        if self.corrects_source_ref is not None:
+            _require_text(self.corrects_source_ref, "corrects_source_ref")
+            if self.evidence_kind is not EvidenceKind.EXPLICIT_CORRECTION:
+                raise ValueError("only explicit corrections may target a prior cue")
         if self.claim is ClaimKind.SELF_APPRAISAL and self.subject_id != self.actor_id:
             raise ValueError("self-appraisal cannot be attributed to another subject")
         if (self.evidence_kind is EvidenceKind.AUTHORED_SELF_REPORT
                 and self.claim is not ClaimKind.SELF_APPRAISAL):
             raise ValueError("self-report cannot establish another person's state")
         if (self.evidence_kind is EvidenceKind.EXPLICIT_CORRECTION
-                and self.claim is ClaimKind.OTHER_MIND_INFERENCE):
-            raise ValueError("explicit correction cannot itself establish another mind")
+                and self.claim is ClaimKind.OTHER_MIND_INFERENCE
+                and self.corrects_source_ref is None):
+            raise ValueError("another-mind correction requires a prior cue target")
+        # Retraction of another-mind inference is not evidence of the
+        # opposite mental state; it only invalidates the cited cue.
 
 
 @dataclass(frozen=True)
@@ -133,6 +141,19 @@ class Interaction:
             if (item.actor_id != self.actor_id
                     or item.subject_id != self.subject_id):
                 raise ValueError("cross-identity or cross-subject evidence is not admissible")
+        for index, item in enumerate(self.evidence):
+            if item.corrects_source_ref is None:
+                continue
+            matches = [
+                earlier for earlier in self.evidence[:index]
+                if earlier.claim is item.claim
+                and earlier.source_ref == item.corrects_source_ref
+                and earlier.evidence_kind in (
+                    EvidenceKind.INFERENCE, EvidenceKind.OBSERVED_BEHAVIOR,
+                )
+            ]
+            if len(matches) != 1:
+                raise ValueError("correction target must identify one prior same-kind cue")
 
 
 @dataclass(frozen=True)
@@ -207,17 +228,17 @@ def plan_interaction(profile: ActorProfile, turn: Interaction) -> SocialPlan:
     elif turn.kind is InteractionKind.SENSITIVE:
         register = Register.GENTLE
 
-    # A direct correction of a social interpretation takes priority over the
-    # older interpretation for tone guidance. Retain the inference as typed
-    # history, but do not continue acting on it as a live cue.
-    corrected_kinds = {
-        e.claim for e in turn.evidence
+    # Only an explicitly targeted, earlier same-kind cue is withdrawn.
+    # An untargeted correction cannot silently suppress unrelated evidence.
+    corrected_cues = {
+        (e.claim, e.corrects_source_ref) for e in turn.evidence
         if e.evidence_kind is EvidenceKind.EXPLICIT_CORRECTION
+        and e.corrects_source_ref is not None
     }
     assessments = []
     for item in turn.evidence:
         assessment = _classify(item)
-        if item.claim in corrected_kinds and assessment.standing in (
+        if (item.claim, item.source_ref) in corrected_cues and assessment.standing in (
             ClaimStanding.INFERENCE_ONLY, ClaimStanding.OBSERVATION_ONLY,
         ):
             assessment = ClassifiedClaim(
