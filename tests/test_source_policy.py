@@ -58,6 +58,30 @@ class SourceAdmissionTests(unittest.TestCase):
                 self.assertNotIn("Brigit", text)
                 self.assertNotIn("Vera", text)
 
+    def test_read_is_bounded_on_open_file_handle_not_pathlib_read_text(self):
+        from unittest.mock import patch
+        with patch.object(Path, "read_text", side_effect=AssertionError("unbounded read")):
+            result = read_active_source(ROOT, "PERSONIFICATION_V1.md")
+        self.assertIn("identity-neutral", result)
+
+    def test_rejects_oversized_bytes_and_directory_indirections(self):
+        from unittest.mock import patch
+        with patch("personification.source_policy._MAX_BYTES", 24):
+            with self.assertRaisesRegex(ValueError, "bounded intake"):
+                read_active_source(ROOT, "README.md")
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            (base / "README.md").write_text("normal", encoding="utf8")
+            self.assertEqual(read_active_source(base, "README.md"), "normal")
+            # A symlinked file must not be followed even when the name is admitted.
+            (base / "README.md").unlink()
+            try:
+                (base / "README.md").symlink_to(ROOT / "README.md")
+            except (OSError, NotImplementedError):
+                self.skipTest("filesystem does not allow symbolic links")
+            with self.assertRaises(ValueError):
+                read_active_source(base, "README.md")
+
     def test_no_auto_profile_load_from_repository_history(self):
         allowed = read_active_source(ROOT, "PERSONIFICATION_V1.md")
         self.assertIn("identity-neutral", allowed)
