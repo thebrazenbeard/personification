@@ -7,20 +7,60 @@ already-installed workstation or extension.
 import json
 from pathlib import Path
 import re
+import tempfile
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+JSONC_TOKENS = re.compile(r'"(?:\\.|[^"\\])*"|//[^\r\n]*|/\*[\s\S]*?\*/')
+JSONC_TRAILING_COMMAS = re.compile(r'"(?:\\.|[^"\\])*"|,\s*(?=[}\]])')
 
 
 def read_jsonc(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
-    # Existing workspace JSON sometimes contains trailing commas. Restrict
-    # normalization to that syntax; reject anything else malformed.
-    return json.loads(re.sub(r",\s*(?=[}\]])", "", text))
+    # Strip JSONC comments without changing quoted strings. Keep newlines to
+    # preserve useful parse locations. Reject other malformed JSONC normally.
+    no_comments = JSONC_TOKENS.sub(
+        lambda match: match.group(0)
+        if match.group(0).startswith('"')
+        else re.sub(r"[^\r\n]", " ", match.group(0)),
+        text,
+    )
+    normalized = JSONC_TRAILING_COMMAS.sub(
+        lambda match: match.group(0) if match.group(0).startswith('"') else "",
+        no_comments,
+    )
+    return json.loads(normalized)
 
 
 class WorkspaceStartupSafetyTests(unittest.TestCase):
+    def test_jsonc_preserves_strings_and_accepts_comments(self):
+        # A comment or trailing-comma sequence inside a quoted task value is
+        # data, not syntax.  Workspace files such as launch.json also contain
+        # genuine JSONC line comments.
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / "tasks.json"
+            config.write_text(
+                '{\n'
+                ' // editor metadata\n'
+                ' "note": "literal ,} // not a comment",\n'
+                ' /* a block comment over\n'
+                ' two lines */\n'
+                ' "tasks": [{"label": "safe",}], // trailing comma\n'
+                '}\n',
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                read_jsonc(config),
+                {"note": "literal ,} // not a comment", "tasks": [{"label": "safe"}]},
+            )
+
+    def test_actual_launch_jsonc_is_parseable(self):
+        # Keep the safety scanner usable with this repository's tracked VS Code
+        # configuration, which contains both comments and trailing commas.
+        launch = read_jsonc(ROOT / ".vscode" / "launch.json")
+        self.assertIsInstance(launch.get("configurations"), list)
+
     def test_no_folder_open_tasks(self):
         tasks = read_jsonc(ROOT / ".vscode" / "tasks.json")
         self.assertIsInstance(tasks.get("tasks", []), list)
