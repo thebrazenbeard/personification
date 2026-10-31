@@ -2,31 +2,43 @@
 
 # Personification
 
-**Personification is an identity-neutral social-cognition research and planning component.** It is not Brigit's runtime, Vera's identity source, a biological person simulator, or an autonomous execution system.
+**Personification is a reusable, identity-neutral social-cognition research and planning component.** It is not an agent identity source, a biological-person simulator, a chat renderer, or an autonomous execution system.
 
-The core accepts **explicit actor profiles** provided by a host and converts typed, provenance-scoped evidence plus a literal request into bounded social-response guidance. It does not select an identity, manufacture feelings, mint relational facts or consent, persist memories, operate tools, train weights, or infer hidden consciousness.
+An integrating host supplies an explicit actor profile and a literal user request. The deterministic planner classifies typed, provenance-scoped social evidence and returns bounded response guidance. It does not select an identity, manufacture feelings, mint relational facts or consent, persist memories, operate tools, train weights, or infer hidden consciousness.
+
+## What the library provides
+
+| Capability | Implemented behavior | Boundary |
+| --- | --- | --- |
+| Social-turn planning | `plan_interaction` chooses response register and whether casual humor is permitted | Returns guidance, not a rendered or transmitted reply |
+| Proposition integrity | Preserves the user's `literal_request` as the answer target and keeps terminology suggestions separate | A host still must answer the original question faithfully |
+| Scoped evidence | Types direct statements, observed cues, inferences, self-reports, and corrections for one actor and subject | Does not authenticate the speaker or establish another person's private mental state |
+| Correction handling | Explicitly targeted corrections suppress the tone influence of the identified earlier cue | Does not erase evidence provenance or grant current consent |
+| Optional source admission | Allowlisted read helper rejects historical actor-specific files and unexpected paths | Only protects consumers that choose to use it; not a complete filesystem transaction |
+
+An authorizing host remains responsible for profile selection, currentness, consent, identity, privacy, effect permissions, and any actual response or tool execution. A relationship cue may affect tone within its evidence ceiling; it never becomes authorization.
 
 ## Current source
 
-- [PERSONIFICATION_V1.md](PERSONIFICATION_V1.md): active, identity-neutral contract and claim ceiling
-- [src/personification](src/personification): deterministic standard-library Python package
-- [tests](tests): adversarial checks for identity isolation, consent/evidence boundaries, and preserving the user's literal proposition
-- [examples](examples): profiles are *host-supplied*, not automatically installed from this repository
-- [source admission policy](src/personification/source_policy.py): explicitly allowlisted active source files, with historical actor-specific documents excluded from repository intake
-- [history](history): original Brigit and Vera authored charters and notes preserved by Git renames as historical evidence, **never auto-loaded as active profiles**
+- [PERSONIFICATION_V1.md](PERSONIFICATION_V1.md): current identity-neutral contract and evidence limits.
+- [src/personification](src/personification): standard-library Python implementation.
+- [tests](tests): adversarial checks for identity separation, provenance, consent boundaries, and literal-proposition integrity.
+- [examples](examples): examples of host-supplied profiles; none is installed as a default identity.
+- [source admission policy](src/personification/source_policy.py): explicitly allowlisted active files, excluding historical actor-specific material from repository intake.
+- [history](history): original authored charters preserved for provenance; **never loaded automatically as active profiles**.
 
-The reusable mechanism addresses the open issue on silently replacing the user's actual proposition: the planner preserves the original words as the answer target, with any optional terminology correction in a separate field. A host still must demonstrate behavioral fidelity when consuming the guidance.
+## Installation and verification
 
-## Local development
+Requires Python 3.11 or newer. The project declares no external runtime dependencies. From a checkout, install the package before invoking tests (the source uses a `src/` layout):
 
-Requires Python 3.11 or newer; no external runtime dependencies.
-
-```powershell
-python -m unittest discover -s tests -v
+```sh
 python -m pip install -e .
+python -m unittest discover -s tests -v
 ```
 
-A minimal demonstration:
+If package installation is intentionally unavailable in a constrained test environment, put `src/` on Python's import path for the test process instead. A fresh Python 3.12 checkout executed all **42 tests successfully** with this source-path method; that result is source-test evidence, not proof of any deployed host behavior.
+
+Minimal use:
 
 ```python
 from personification import ActorProfile, Interaction, InteractionKind, Register, plan_interaction
@@ -44,10 +56,10 @@ assert plan.answer_target == turn.literal_request
 assert not plan.permission_to_act
 ```
 
-This example deliberately uses no named agent. Vera's canonical behavior profile belongs to `thebrazenbeard/vera-mono`; a future host adapter could bind it without making this repository a required sibling runtime dependency.
+The identifiers above are placeholders; no named model or actor is embedded in the package. An integration may provide its own distinct profiles, evidence and authorization service without making either an identity donor to another.
 
-## Admission rules
+## Evidence and safety boundaries
 
-An inferred cue may modulate tone within its evidence ceiling. It cannot become a directly confirmed relationship, an inferred person's private inner state, a current consent/boundary state, or tool authority. Direct user statements are still typed claims; a downstream consent/policy engine must verify scope, presentness, referent, and effect authorization.
+An inferred cue may inform register only within its typed evidence ceiling. It cannot become a confirmed relationship, another person's private inner state, a current preference, consent, or tool authority. Even a direct user statement remains a sourced claim: the authorizing host must separately bind present referent, scope, provenance, and action permission.
 
-No local passing test proves an installed host route, actual runtime consumption, independent social competence, self-directed experience, or AGI. Brigit's archived material remains Brigit's; Vera's separate archived appraisal remains Vera's. Neither is silently copied into the other's identity.
+Tests demonstrate specified source-level invariants, not an installed host route, actual runtime consumption, independent social competence, self-directed experience, or artificial general intelligence. Authored historical material remains tied to its original subject and is never silently transferred between actors.
