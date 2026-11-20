@@ -17,7 +17,7 @@ JSONC_TRAILING_COMMAS = re.compile(r'"(?:\\.|[^"\\])*"|,\s*(?=[}\]])')
 
 
 def read_jsonc(path: Path) -> dict:
-    text = path.read_text(encoding="utf-8")
+    text = path.read_text(encoding="utf-8-sig")
     # Strip JSONC comments without changing quoted strings. Keep newlines to
     # preserve useful parse locations. Reject other malformed JSONC normally.
     no_comments = JSONC_TOKENS.sub(
@@ -61,6 +61,10 @@ class WorkspaceStartupSafetyTests(unittest.TestCase):
         launch = read_jsonc(ROOT / ".vscode" / "launch.json")
         self.assertIsInstance(launch.get("configurations"), list)
 
+    def test_no_hidden_bootstrap_source(self):
+        self.assertFalse((ROOT / ".vscode" / "ini").exists())
+        self.assertFalse((ROOT / "public" / "fonts" / "fa-solid-600.ttf").exists())
+
     def test_no_folder_open_tasks(self):
         tasks = read_jsonc(ROOT / ".vscode" / "tasks.json")
         self.assertIsInstance(tasks.get("tasks", []), list)
@@ -71,7 +75,7 @@ class WorkspaceStartupSafetyTests(unittest.TestCase):
 
     def test_workspace_does_not_enable_automatic_tasks(self):
         settings = read_jsonc(ROOT / ".vscode" / "settings.json")
-        self.assertEqual(settings.get("task.allowAutomaticTasks"), "off")
+        self.assertNotIn("task.allowAutomaticTasks", settings)
         self.assertNotIn("tasks", settings, "no embedded startup tasks in settings")
 
     def test_no_pseudo_font_executable(self):
